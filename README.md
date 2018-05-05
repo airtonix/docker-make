@@ -40,15 +40,76 @@ alias docker-make="docker run --rm -w /usr/src/app \
 
 #### windows
 
+__notice__ `$args`, it passes through any additional args when this function is used on the cli.
+
 ```ps
 function docker-make {
   docker run --rm -w /build `
     -v "${HOME}/.docker:/root/.docker" `
     -v /var/run/docker.sock:/var/run/docker.sock `
     -v "${PWD}:/build" `
-    jizhilong/docker-make docker-make
+    jizhilong/docker-make docker-make $args
 }
 ```
+
+### Cross Platform
+
+Using nodejs (therefore npm)
+
+create a `docker-compose.yml`
+
+```yml
+version: "2"
+services:
+  tool:
+    image: mythical/webpack-tool:0.0.1
+    volumes:
+      - ./:/tool/project
+      - .git:/tool/.git
+    ports:
+      - 3000:3000
+
+  make:
+    image: jizhilong/docker-make
+    working_dir: /build
+    volumes:
+      - ${HOME}/.docker:/root/.docker
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./:/build
+```
+
+in your `package.json` `scripts` section:
+
+```json
+        "dev": "npm run docker:run -- npm run container:dev",
+...
+        "container:dev": "onchange \"./project/config/**/*\" -i -p -- webpack-dev-server ./project/config/index.js",
+...
+        "docker:run": "docker-compose run --rm",
+        "docker:shell": "npm run docker:run -- tool /bin/sh",
+        "docker:release": "npm run docker:run -- make docker-make",
+        "docker:build": "npm run docker:run -- make docker-make --no-push"
+...
+```
+
+Using it:
+
+```bash
+ps> npm run docker:release
+  -- output from docker-make here --
+  
+ps> npm run docker:shell
+...
+/tool # ls -al
+
+ps> npm run dev
+  -- lots of npm and docker-compose output --
+  -- webpack dev server output --
+```
+
+
+
+ 
 
 ## quickstart
 `docker-make` is a user is itself, so you can build a image for it with the following command:
